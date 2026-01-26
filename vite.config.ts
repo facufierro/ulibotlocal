@@ -6,5 +6,6 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5174, // Use a different port to avoid conflict with the main front
+    hmr: false,
   },
 })

@@ -13,7 +13,8 @@ function App() {
   useEffect(() => {
     // 1. Load the widget script from the running frontend
     const script = document.createElement('script');
-    script.src = "http://localhost:3000/widget.js"; // Pointing to local ulibotfront
+    // Updated to point to port 3000 where the docker container is running
+    script.src = "http://localhost:3000/widget.js"; 
     script.async = true;
     script.onload = () => {
       console.log('Widget script loaded');
@@ -43,7 +44,10 @@ function App() {
         token: "0842111e5f0b4c5b", 
         
         // Point to local backend API
-        backurl: "http://localhost:8000/ulibot", 
+        backurl: "http://127.0.0.1:8000/ulibot", 
+
+        // Enable Vite dev server mode for HMR assets
+        dev: true,
         
         // Mode: "0" = widget (floating), "1" = inline
         displaymode: "1",
