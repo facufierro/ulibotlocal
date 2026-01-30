@@ -50,8 +50,25 @@ function App() {
         dev: true,
         
         // Mode: "0" = widget (floating), "1" = inline
-        displaymode: "1",
+        displaymode: "0",
       });
+
+      // 2. Initialize Inline (delayed to bypass singleton check)
+      setTimeout(() => {
+        console.log('Initializing Inline Widget...');
+        // Hack: Reset mount flag to allow second instance
+        // @ts-ignore
+        window.__ulibotMounted = false;
+
+        window.insertUliBotWidget({
+          url: "http://localhost:3000", 
+          token: "0842111e5f0b4c5b", 
+          backurl: "http://127.0.0.1:8000/ulibot", 
+          dev: true,
+          displaymode: "1",
+          inlineSelector: "#ulibot-inline-container"
+        });
+      }, 1000);
     }
   }, [mounted]);
 
