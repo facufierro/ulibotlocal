@@ -20,7 +20,6 @@ pnpm-debug.log*
 coverage/
 
 # editor directories and files
-.vscode/
 *.sw?
 
 # system files
