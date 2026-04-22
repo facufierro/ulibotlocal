@@ -46,7 +46,8 @@ def optional(env: dict[str, str], key: str, default: str = "") -> str:
 def build_sql(env: dict[str, str]) -> str:
 	tenant_name = required(env, "ULIBOT_TENANT_NAME")
 	assistant_name = required(env, "ULIBOT_ASSISTANT_NAME")
-	assistant_type = optional(env, "ULIBOT_ASSISTANT_TYPE", "openairesponses")
+	assistant_type = optional(env, "ULIBOT_ASSISTANT_TYPE", "langgraph")
+	provider = optional(env, "ULIBOT_PROVIDER", "openai")
 	site_name = required(env, "ULIBOT_SITE_NAME")
 	site_host = required(env, "ULIBOT_SITE_HOST")
 	site_token = required(env, "ULIBOT_SITE_TOKEN")
@@ -68,6 +69,7 @@ def build_sql(env: dict[str, str]) -> str:
 SET @tenant_name = '{sql_escape(tenant_name)}';
 SET @assistant_name = '{sql_escape(assistant_name)}';
 SET @assistant_type = '{sql_escape(assistant_type)}';
+SET @provider = '{sql_escape(provider)}';
 SET @site_name = '{sql_escape(site_name)}';
 SET @site_host = '{sql_escape(site_host)}';
 SET @site_token = '{sql_escape(site_token)}';
@@ -144,7 +146,8 @@ WHERE assistantId = @assistant_id
 	'language',
 	'model',
 	'template',
-	'image_upload_glpi'
+	'image_upload_glpi',
+	'provider'
   );
 
 INSERT INTO assistant_meta (assistantId, `key`, value, deletedAt)
@@ -155,7 +158,8 @@ VALUES
   (@assistant_id, 'language', '{sql_escape(language)}', NULL),
   (@assistant_id, 'model', '{sql_escape(model)}', NULL),
   (@assistant_id, 'template', '{sql_escape(template)}', NULL),
-  (@assistant_id, 'image_upload_glpi', 'false', NULL);
+  (@assistant_id, 'image_upload_glpi', 'false', NULL),
+  (@assistant_id, 'provider', '{sql_escape(provider)}', NULL);
 
 SELECT 'Seed complete' AS status, @tenant_id AS tenant_id, @assistant_id AS assistant_id, @site_id AS site_id, @site_token AS site_token;
 """.strip()
@@ -189,7 +193,7 @@ def run_seed(sql: str, env: dict[str, str]) -> int:
 	return completed.returncode
 
 
-def run_migrations() -> int:
+def run_reset() -> int:
 	command = [
 		"docker",
 		"compose",
@@ -198,7 +202,7 @@ def run_migrations() -> int:
 		"ulibotback",
 		"bash",
 		"-lc",
-		"cd /home/dev/app && poetry run prisma migrate deploy --schema db/schema.prisma",
+		"cd /home/dev/app && poetry run prisma migrate reset --force --skip-seed --schema db/schema.prisma",
 	]
 
 	completed = subprocess.run(command, cwd=BACKEND_DIR)
@@ -213,11 +217,11 @@ def main() -> int:
 		print(f"Error: {exc}", file=sys.stderr)
 		return 1
 
-	print("Running Prisma migrations...")
-	migration_code = run_migrations()
-	if migration_code != 0:
-		print("Migration step failed.", file=sys.stderr)
-		return migration_code
+	print("Resetting database (prisma migrate reset)...")
+	reset_code = run_reset()
+	if reset_code != 0:
+		print("Reset step failed.", file=sys.stderr)
+		return reset_code
 
 	print("Running seed...")
 	code = run_seed(sql, env)
