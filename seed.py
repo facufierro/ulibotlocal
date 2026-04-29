@@ -202,7 +202,7 @@ def run_reset() -> int:
 		"ulibotback",
 		"bash",
 		"-lc",
-		"cd /home/dev/app && poetry run prisma migrate reset --force --skip-seed --schema db/schema.prisma",
+		"cd /home/dev/app && poetry install --no-interaction && poetry run prisma migrate reset --force --skip-seed --skip-generate --schema db/schema.prisma",
 	]
 
 	completed = subprocess.run(command, cwd=BACKEND_DIR)
