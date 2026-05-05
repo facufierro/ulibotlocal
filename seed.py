@@ -52,6 +52,9 @@ def build_sql(env: dict[str, str]) -> str:
 	site_host = required(env, "ULIBOT_SITE_HOST")
 	site_token = required(env, "ULIBOT_SITE_TOKEN")
 	openai_token = optional(env, "ULIBOT_OPENAI_TOKEN")
+	bedrock_access_key = optional(env, "ULIBOT_BEDROCK_ACCESS_KEY")
+	bedrock_secret_key = optional(env, "ULIBOT_BEDROCK_SECRET_KEY")
+	bedrock_region = optional(env, "ULIBOT_BEDROCK_REGION")
 	active_audio = optional(env, "ULIBOT_ACTIVE_AUDIO", "1")
 	disclaimer_text = optional(env, "ULIBOT_DISCLAIMER_TEXT", "Local test assistant")
 	language = optional(env, "ULIBOT_LANGUAGE", "en")
@@ -64,6 +67,9 @@ def build_sql(env: dict[str, str]) -> str:
 	)
 
 	token_sql = f"'{sql_escape(openai_token)}'" if openai_token else "NULL"
+	bedrock_access_key_sql = f"'{sql_escape(bedrock_access_key)}'" if bedrock_access_key else "NULL"
+	bedrock_secret_key_sql = f"'{sql_escape(bedrock_secret_key)}'" if bedrock_secret_key else "NULL"
+	bedrock_region_sql = f"'{sql_escape(bedrock_region)}'" if bedrock_region else "NULL"
 
 	return f"""
 SET @tenant_name = '{sql_escape(tenant_name)}';
@@ -74,6 +80,9 @@ SET @site_name = '{sql_escape(site_name)}';
 SET @site_host = '{sql_escape(site_host)}';
 SET @site_token = '{sql_escape(site_token)}';
 SET @openai_token = {token_sql};
+SET @bedrock_access_key = {bedrock_access_key_sql};
+SET @bedrock_secret_key = {bedrock_secret_key_sql};
+SET @bedrock_region = {bedrock_region_sql};
 
 INSERT INTO tenant (name, openaitoken, openaiorgid, clickhouseconnection)
 SELECT @tenant_name, @openai_token, NULL, NULL
@@ -92,6 +101,13 @@ SET openaitoken = @openai_token
 WHERE id = @tenant_id
   AND @openai_token IS NOT NULL
   AND @openai_token <> '';
+
+UPDATE tenant
+SET
+  bedrockAccessKey = @bedrock_access_key,
+  bedrockSecretKey = @bedrock_secret_key,
+  bedrockRegion = @bedrock_region
+WHERE id = @tenant_id;
 
 INSERT INTO assistant (name, tenantId, type, deletedAt)
 SELECT @assistant_name, @tenant_id, @assistant_type, NULL
