@@ -6,8 +6,8 @@ from pathlib import Path
 
 
 ROOT_DIR = Path(__file__).resolve().parent
-BACKEND_DIR = (ROOT_DIR / ".." / "ulibotback").resolve()
-ENV_PATH = ROOT_DIR / ".env"
+BACKEND_DIR = (ROOT_DIR / ".." / ".." / "ulibotback").resolve()
+ENV_PATH = ROOT_DIR / ".." / ".env"
 
 
 def parse_env(path: Path) -> dict[str, str]:
