@@ -177,6 +177,28 @@ VALUES
   (@assistant_id, 'image_upload_glpi', 'false', NULL),
   (@assistant_id, 'provider', '{sql_escape(provider)}', NULL);
 
+-- Inline assistant (display_mode=1 for the inline test)
+SET @inline_name = CONCAT(@assistant_name, ' Inline');
+INSERT INTO assistant (name, tenantId, type, deletedAt)
+SELECT @inline_name, @tenant_id, @assistant_type, NULL FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM assistant WHERE name = @inline_name AND tenantId = @tenant_id AND deletedAt IS NULL);
+SELECT id INTO @inline_id FROM assistant WHERE name = @inline_name AND tenantId = @tenant_id AND deletedAt IS NULL ORDER BY id DESC LIMIT 1;
+UPDATE assistant SET type = @assistant_type WHERE id = @inline_id;
+DELETE FROM site_assistant WHERE siteId = @site_id AND context = 'general' AND contextInstance = 'inline' AND deletedAt IS NULL;
+INSERT INTO site_assistant (siteId, assistantId, context, contextInstance, deletedAt) VALUES (@site_id, @inline_id, 'general', 'inline', NULL);
+DELETE FROM assistant_meta WHERE assistantId = @inline_id AND deletedAt IS NULL AND `key` IN ('activeaudio','disclaimertext','alignstyle','language','model','template','image_upload_glpi','provider','display_mode','inline_selector');
+INSERT INTO assistant_meta (assistantId, `key`, value, deletedAt) VALUES
+  (@inline_id, 'activeaudio', '{sql_escape(active_audio)}', NULL),
+  (@inline_id, 'disclaimertext', '{sql_escape(disclaimer_text)}', NULL),
+  (@inline_id, 'alignstyle', '{sql_escape(alignstyle)}', NULL),
+  (@inline_id, 'language', '{sql_escape(language)}', NULL),
+  (@inline_id, 'model', '{sql_escape(model)}', NULL),
+  (@inline_id, 'template', '{sql_escape(template)}', NULL),
+  (@inline_id, 'image_upload_glpi', 'false', NULL),
+  (@inline_id, 'provider', '{sql_escape(provider)}', NULL),
+  (@inline_id, 'display_mode', '1', NULL),
+  (@inline_id, 'inline_selector', '#ulibot-inline-container', NULL);
+
 SELECT 'Seed complete' AS status, @tenant_id AS tenant_id, @assistant_id AS assistant_id, @site_id AS site_id, @site_token AS site_token;
 """.strip()
 

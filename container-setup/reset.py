@@ -12,6 +12,7 @@ Usage (from ulibotlocal/):
 import subprocess
 import sys
 import time
+import shutil
 import urllib.request
 import urllib.error
 from pathlib import Path
@@ -80,6 +81,12 @@ def wait_for_api(timeout: int = 90):
 # ── main ──────────────────────────────────────────────────────────────────────
 
 def main():
+    override_src = SCRIPT_DIR / "compose.override.yml"
+    override_dst = BACKEND_DIR / "compose.override.yml"
+    if override_src.exists():
+        shutil.copy2(override_src, override_dst)
+        print(f"Copied compose.override.yml → {override_dst}")
+
     step("Tearing down all services and volumes")
     run("docker", "compose", "down", "-v")
 

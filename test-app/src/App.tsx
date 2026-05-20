@@ -65,8 +65,8 @@ function App() {
           token: "0842111e5f0b4c5b", 
           backurl: "http://127.0.0.1:8000/ulibot", 
           dev: true,
-          displaymode: "1",
-          inlineSelector: "#ulibot-inline-container"
+          context: "general",
+          contextinstance: "inline",
         });
       }, 1000);
     }
