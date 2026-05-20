@@ -56,6 +56,7 @@ def build_sql(env: dict[str, str]) -> str:
 	bedrock_secret_key = optional(env, "ULIBOT_BEDROCK_SECRET_KEY")
 	bedrock_region = optional(env, "ULIBOT_BEDROCK_REGION")
 	active_audio = optional(env, "ULIBOT_ACTIVE_AUDIO", "1")
+	realtime_model = optional(env, "ULIBOT_REALTIME_MODEL", "")
 	disclaimer_text = optional(env, "ULIBOT_DISCLAIMER_TEXT", "Local test assistant")
 	language = optional(env, "ULIBOT_LANGUAGE", "en")
 	model = optional(env, "ULIBOT_MODEL", "gpt-4o-mini")
@@ -161,6 +162,7 @@ WHERE assistantId = @assistant_id
 	'alignstyle',
 	'language',
 	'model',
+	'realtime_model',
 	'template',
 	'image_upload_glpi',
 	'provider'
@@ -173,6 +175,7 @@ VALUES
   (@assistant_id, 'alignstyle', '{sql_escape(alignstyle)}', NULL),
   (@assistant_id, 'language', '{sql_escape(language)}', NULL),
   (@assistant_id, 'model', '{sql_escape(model)}', NULL),
+  (@assistant_id, 'realtime_model', '{sql_escape(realtime_model)}', NULL),
   (@assistant_id, 'template', '{sql_escape(template)}', NULL),
   (@assistant_id, 'image_upload_glpi', 'false', NULL),
   (@assistant_id, 'provider', '{sql_escape(provider)}', NULL);
@@ -186,13 +189,14 @@ SELECT id INTO @inline_id FROM assistant WHERE name = @inline_name AND tenantId 
 UPDATE assistant SET type = @assistant_type WHERE id = @inline_id;
 DELETE FROM site_assistant WHERE siteId = @site_id AND context = 'general' AND contextInstance = 'inline' AND deletedAt IS NULL;
 INSERT INTO site_assistant (siteId, assistantId, context, contextInstance, deletedAt) VALUES (@site_id, @inline_id, 'general', 'inline', NULL);
-DELETE FROM assistant_meta WHERE assistantId = @inline_id AND deletedAt IS NULL AND `key` IN ('activeaudio','disclaimertext','alignstyle','language','model','template','image_upload_glpi','provider','display_mode','inline_selector');
+DELETE FROM assistant_meta WHERE assistantId = @inline_id AND deletedAt IS NULL AND `key` IN ('activeaudio','disclaimertext','alignstyle','language','model','realtime_model','template','image_upload_glpi','provider','display_mode','inline_selector');
 INSERT INTO assistant_meta (assistantId, `key`, value, deletedAt) VALUES
   (@inline_id, 'activeaudio', '{sql_escape(active_audio)}', NULL),
   (@inline_id, 'disclaimertext', '{sql_escape(disclaimer_text)}', NULL),
   (@inline_id, 'alignstyle', '{sql_escape(alignstyle)}', NULL),
   (@inline_id, 'language', '{sql_escape(language)}', NULL),
   (@inline_id, 'model', '{sql_escape(model)}', NULL),
+  (@inline_id, 'realtime_model', '{sql_escape(realtime_model)}', NULL),
   (@inline_id, 'template', '{sql_escape(template)}', NULL),
   (@inline_id, 'image_upload_glpi', 'false', NULL),
   (@inline_id, 'provider', '{sql_escape(provider)}', NULL),
