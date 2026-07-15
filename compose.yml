@@ -1,0 +1,130 @@
+# All-in-one LOCAL test stack: Moodle 4.5 (+ local_ulibot & mod_lia) + FastAPI backend
+# + React widget frontend + all databases, on one Docker network.
+#
+#   Run:  python up.py        (from this directory — installs Moodle, seeds, wires config)
+#
+# The critical widget flow is browser -> published localhost ports (front :3000, back :8000),
+# so those URLs use "localhost". Container-to-container DNS uses the service names below.
+name: ulibot-allinone
+
+services:
+  # ── Moodle 4.5 with both plugins bind-mounted ───────────────────────────────
+  moodle:
+    build:
+      context: .
+      dockerfile: docker/moodle.Dockerfile
+    depends_on:
+      moodledb:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    volumes:
+      - moodledata:/var/www/moodledata
+      - ../plugin-uli:/var/www/html/local/ulibot
+      - ../plugin-lia:/var/www/html/mod/lia
+      - ./docker/moodle-config.php:/var/www/html/config.php:ro
+      # Overlay a valid install.xml so local_ulibot installs on fresh Moodle 4.5 (upstream ships
+      # an empty TABLES section by design). Container-only overlay; plugin repo untouched.
+      - ./docker/local_ulibot-install.xml:/var/www/html/local/ulibot/db/install.xml:ro
+
+  moodledb:
+    image: mariadb:10.11
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --innodb-file-per-table=1
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_DATABASE: moodle
+      MYSQL_USER: moodle
+      MYSQL_PASSWORD: moodle
+    # Internal only (reached as "moodledb" on the compose network); not published to avoid
+    # colliding with a standalone stack or a host MySQL. To inspect from the host, either add a
+    # `ports: ["3307:3306"]` line temporarily or use `docker compose exec moodledb mysql ...`.
+    volumes:
+      - moodledb-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  # ── Selenium (Chrome) for Behat @javascript tests; noVNC on :7900 ───────────
+  selenium:
+    image: selenium/standalone-chrome:4
+    shm_size: "2gb"
+    ports:
+      - "4444:4444"
+      - "7900:7900"
+
+  # ── UliBot backend (FastAPI + Prisma + LangGraph) ───────────────────────────
+  ulibotback:
+    build:
+      context: ../ulibotback
+      dockerfile: Dockerfile
+    depends_on:
+      backdb:
+        condition: service_healthy
+    env_file:
+      - path: ../ulibotback/.env
+        required: false
+    environment:
+      # Override whatever the backend .env points at so Prisma talks to THIS stack's DB.
+      ULIBOT_DB_URL: "mysql://ulibot:ulibot@backdb:3306/ulibot"
+      ULIBOT_DB_SHADOW_URL: "mysql://root:123456@backdb:3306/ulibot_shadow"
+    working_dir: /home/dev/app
+    volumes:
+      - ../ulibotback:/home/dev/app
+    command: >
+      bash -lc "poetry install --no-interaction &&
+                poetry run prisma migrate deploy --schema db/schema.prisma &&
+                poetry run prisma generate --schema db/schema.prisma &&
+                poetry run uvicorn app:app --host 0.0.0.0 --port 8000 --reload"
+    ports:
+      - "8000:8000"
+
+  backdb:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_DATABASE: ulibot
+      MYSQL_USER: ulibot
+      MYSQL_PASSWORD: ulibot
+    # Internal only (reached as "backdb" on the compose network); not published to avoid the
+    # 3306 collision with the standalone ulibotback stack / a host MySQL.
+    volumes:
+      - backdb-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uulibot", "-pulibot"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:23.10
+    # Internal only (reached as "clickhouse" on the compose network).
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+
+  # ── UliBot frontend widget: built dist served with CORS on :3000 ────────────
+  # We build with an inline Dockerfile (not ../ulibotfront/Dockerfile) so we don't modify that
+  # repo — and so the build runs as root, avoiding the EACCES that its production path hits on
+  # node:20.15 (root-owned WORKDIR, `USER node` can't create node_modules).
+  ulibotfront:
+    build:
+      context: ../ulibotfront
+      dockerfile_inline: |
+        FROM node:20.15
+        WORKDIR /app
+        COPY . .
+        RUN npm install -g http-server && npm install && npm run build
+        EXPOSE 3000
+        CMD ["http-server", "./dist", "-p", "3000", "--cors"]
+    ports:
+      - "3000:3000"
+
+volumes:
+  moodledata:
+  moodledb-data:
+  backdb-data:
+  clickhouse-data:
