@@ -105,6 +105,9 @@ services:
     # Internal only (reached as "clickhouse" on the compose network).
     volumes:
       - clickhouse-data:/var/lib/clickhouse
+      # Allow the experimental Annoy index so the LangChain Clickhouse vectorstore can create
+      # its gdrive_embeddings_* tables (Bedrock/langgraph file RAG).
+      - ./docker/clickhouse-allow-annoy.xml:/etc/clickhouse-server/users.d/allow-annoy.xml:ro
 
   # ── UliBot frontend widget: built dist served with CORS on :3000 ────────────
   # We build with an inline Dockerfile (not ../ulibotfront/Dockerfile) so we don't modify that

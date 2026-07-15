@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!-- Enable the experimental Annoy vector index so the LangChain Clickhouse vectorstore can
+     CREATE its gdrive_embeddings_* tables (used for Bedrock/langgraph file RAG). ClickHouse
+     23.10 disables it by default; the backend's SQL-strip shim doesn't reliably remove the
+     index line, so we allow it at the server instead. -->
+<clickhouse>
+    <profiles>
+        <default>
+            <allow_experimental_annoy_index>1</allow_experimental_annoy_index>
+            <allow_experimental_object_type>1</allow_experimental_object_type>
+        </default>
+    </profiles>
+</clickhouse>
