@@ -29,7 +29,10 @@ MOODLE_ADMIN_PASS = "Admin#12345"
 MOODLE_ADMIN_EMAIL = "admin@example.com"
 
 FRONT_URL = "http://localhost:3000"
-BACK_URL = "http://localhost:8000/ulibot"
+# host.docker.internal (not localhost) so the Moodle *container* can reach the backend for
+# server-side calls like mod_lia file upload -> OpenAI vector store. It also resolves from the
+# host, so the browser widget works too. Auth still keys on the browser host (localhost:8080).
+BACK_URL = "http://host.docker.internal:8000/ulibot"
 
 
 # ── console helpers ───────────────────────────────────────────────────────────
@@ -108,6 +111,44 @@ def moodle_installed() -> bool:
     return result.returncode == 0 and result.stdout.strip().endswith("1")
 
 
+# ── assistant normalization ────────────────────────────────────────────────────
+
+def normalize_assistants_sql(env) -> str:
+    """Force EVERY assistant onto the configured type/provider/model + voice.
+
+    The seed only configures the widget assistants; mod_lia creates its own assistants as
+    `openairesponses` with audio off. This makes them all match (langgraph / bedrock / sonnet +
+    activeaudio), so a Lia activity works on Bedrock with voice after an Apply.
+    """
+    def esc(s: str) -> str:
+        return s.replace("\\", "\\\\").replace("'", "''")
+
+    typ = env.get("ULIBOT_ASSISTANT_TYPE", "langgraph").strip() or "langgraph"
+    meta = {
+        "provider": env.get("ULIBOT_PROVIDER", "").strip(),
+        "model": env.get("ULIBOT_MODEL", "").strip(),
+        "activeaudio": env.get("ULIBOT_ACTIVE_AUDIO", "1").strip() or "1",
+        "realtime_model": env.get("ULIBOT_REALTIME_MODEL", "").strip(),
+        # Enables the `gdrivesearch` tool + ClickHouse RAG — a Bedrock/langgraph assistant's ONLY
+        # file channel (uploaded files are ingested here, not the OpenAI vector store).
+        "tool_openai_gdrive_vector_store_clickhouse_json":
+            '{"host":"clickhouse","port":8123,"table":"gdrive_embeddings_"}',
+    }
+    stmts = [
+        f"UPDATE assistant SET type='{esc(typ)}' WHERE deletedAt IS NULL;",
+        "DELETE FROM assistant_meta WHERE `key` IN "
+        "('provider','model','activeaudio','realtime_model',"
+        "'tool_openai_gdrive_vector_store_clickhouse_json');",
+    ]
+    for key, value in meta.items():
+        if value:
+            stmts.append(
+                "INSERT INTO assistant_meta (assistantId,`key`,value) "
+                f"SELECT id,'{key}','{esc(value)}' FROM assistant WHERE deletedAt IS NULL;"
+            )
+    return "\n".join(stmts)
+
+
 # ── main ──────────────────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -153,6 +194,12 @@ def main() -> None:
         sys.exit("ERROR: seeding failed. Is the backend migration done? "
                  "Check `docker compose logs ulibotback`.")
 
+    step("Normalizing all assistants to the configured provider/model + voice")
+    norm_proc = dc("exec", "-T", "backdb", "mysql", "-uulibot", "-pulibot", "-D", "ulibot",
+                   input=normalize_assistants_sql(env), text=True)
+    if norm_proc.returncode != 0:
+        print("WARNING: assistant normalization failed (non-fatal).", file=sys.stderr)
+
     wait_for_moodle()
 
     if moodle_installed():
@@ -185,6 +232,8 @@ def main() -> None:
         if moodle_cli("admin/cli/cfg.php", "--component=local_ulibot",
                       f"--name={name}", f"--set={value}").returncode != 0:
             sys.exit(f"ERROR: failed to set local_ulibot/{name}. Check `docker compose logs moodle`.")
+    # Default new Lia activities to audio-on (their assistant meta is also normalized above).
+    moodle_cli("admin/cli/cfg.php", "--component=mod_lia", "--name=active_audio", "--set=1")
     moodle_cli("admin/cli/purge_caches.php")
 
     step("Done")

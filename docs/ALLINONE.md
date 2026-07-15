@@ -59,6 +59,27 @@ plugins, and wires `urlulibot` / `urlbackulibot` / `tokenulibot`. It is idempote
 3. Open it, send "hello" → a real `gpt-4o-mini` reply streams back over `ws://localhost:8000/ulibot/ws`.
 4. Create a course → add a **Lia** activity → open it (exercises `mod_lia`).
 
+## Realtime voice
+
+Voice lives on the **site widget** (the floating chat), gated by the assistant's `activeaudio`
+meta (the seed sets it to `1`; the `mod_lia` activity defaults to `0`, i.e. no voice). Flow: the
+browser POSTs `{backurl}/api/v1/openaisession` to mint an ephemeral OpenAI token, then connects
+**directly to OpenAI over WebRTC** — audio never goes through the local backend (it only persists
+transcripts).
+
+Requirements (all handled except the last two):
+- `activeaudio=1` on the assistant ✓; `realtime_model` set to `gpt-realtime` ✓ (empty falls back to
+  the backend default `gpt-realtime-2`). To persist across a re-seed, add
+  `ULIBOT_REALTIME_MODEL=gpt-realtime` to `.env` (otherwise `up.py` re-seeds it empty).
+- **Browse `http://localhost:8080`, not `host.docker.internal:8080`** — `getUserMedia`/WebRTC need a
+  secure context, and only `localhost`/`127.0.0.1` count as secure over plain HTTP.
+- Your tenant OpenAI key must have **Realtime API** access.
+
+Test: on `localhost:8080` as admin, open the widget → click the **mic** button → allow microphone →
+speak → hear the reply (transcript appears in the chat). If the mic errors, check
+`docker compose logs -f ulibotback` for the `openaisession` call; a model-access error there means
+your key needs a different `realtime_model` (e.g. `gpt-4o-realtime-preview`).
+
 ## 4. Automated tests
 
 All tests live under `ulibotlocal/tests/` — nothing is written into the plugin/back/front repos.
@@ -116,9 +137,11 @@ Everything here is under `ulibotlocal/`. The other repos are used **read-only**:
    `ULIBOT_SITE_HOST`) breaks auth silently. Always `localhost`.
 2. **`tokenulibot` ≠ `ULIBOT_SITE_TOKEN`** — JWT signature check fails, widget won't mount.
    `up.py` keeps them equal; don't set `tokenulibot` by hand.
-3. **`urlbackulibot` = `http://localhost:8000/ulibot`** is correct for the browser but is
-   unreachable from *inside* the Moodle container, so server-side course-page calls (admin/teacher
-   mentor lookup) fail-and-are-caught — harmless for load/auth/chat. Use `host.docker.internal`
-   everywhere only if you need those too.
+3. **`urlbackulibot` uses `host.docker.internal`, not `localhost`** — server-side calls (mod_lia /
+   local_ulibot **file upload** to the OpenAI vector store, mentor lookup, course builder) run as PHP
+   *inside* the Moodle container, where `localhost:8000` is the container itself. `up.py` sets
+   `urlbackulibot=http://host.docker.internal:8000/ulibot`, which the container **and** the browser
+   both resolve, so both chat and file upload work. Keep browsing at `localhost:8080` — auth still
+   keys on that host. (Needs Docker Desktop's `host.docker.internal`; present by default on Windows/Mac.)
 4. **Windows performance** — Moodle core is baked into the image and all data is on named volumes.
    Don't bind-mount the Moodle tree or move volumes onto `d:\`.
