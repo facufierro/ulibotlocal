@@ -1,0 +1,164 @@
+ID: A0001
+Name: John
+Surname: Doe
+Email: john.doe@example.edu
+Date of Birth: 2005-03-14
+Course: Introduction to Biology
+Year: 1
+City: Springfield
+Country: USA
+Phone: +1 555-0101
+
+ID: A0002
+Name: Jane
+Surname: Smith
+Email: jane.smith@example.edu
+Date of Birth: 2004-07-22
+Course: Modern History
+Year: 2
+City: Riverton
+Country: USA
+Phone: +1 555-0102
+
+ID: A0003
+Name: Michael
+Surname: Johnson
+Email: michael.johnson@example.edu
+Date of Birth: 2005-11-09
+Course: Calculus I
+Year: 1
+City: Fairview
+Country: USA
+Phone: +1 555-0103
+
+ID: A0004
+Name: Emily
+Surname: Williams
+Email: emily.williams@example.edu
+Date of Birth: 2003-01-30
+Course: English Literature
+Year: 3
+City: Greenville
+Country: USA
+Phone: +1 555-0104
+
+ID: A0005
+Name: David
+Surname: Brown
+Email: david.brown@example.edu
+Date of Birth: 2004-05-18
+Course: Physics I
+Year: 2
+City: Madison
+Country: USA
+Phone: +1 555-0105
+
+ID: A0006
+Name: Sarah
+Surname: Jones
+Email: sarah.jones@example.edu
+Date of Birth: 2005-09-03
+Course: Chemistry
+Year: 1
+City: Franklin
+Country: USA
+Phone: +1 555-0106
+
+ID: A0007
+Name: Daniel
+Surname: Garcia
+Email: daniel.garcia@example.edu
+Date of Birth: 2002-12-11
+Course: Computer Science I
+Year: 4
+City: Georgetown
+Country: USA
+Phone: +1 555-0107
+
+ID: A0008
+Name: Laura
+Surname: Martinez
+Email: laura.martinez@example.edu
+Date of Birth: 2004-04-27
+Course: Economics
+Year: 2
+City: Clinton
+Country: USA
+Phone: +1 555-0108
+
+ID: A0009
+Name: James
+Surname: Rodriguez
+Email: james.rodriguez@example.edu
+Date of Birth: 2005-08-15
+Course: World Geography
+Year: 1
+City: Salem
+Country: USA
+Phone: +1 555-0109
+
+ID: A0010
+Name: Sofia
+Surname: Hernandez
+Email: sofia.hernandez@example.edu
+Date of Birth: 2003-06-06
+Course: Statistics
+Year: 3
+City: Ashland
+Country: USA
+Phone: +1 555-0110
+
+ID: A0011
+Name: Robert
+Surname: Lopez
+Email: robert.lopez@example.edu
+Date of Birth: 2004-10-19
+Course: Philosophy
+Year: 2
+City: Oxford
+Country: USA
+Phone: +1 555-0111
+
+ID: A0012
+Name: Olivia
+Surname: Gonzalez
+Email: olivia.gonzalez@example.edu
+Date of Birth: 2005-02-25
+Course: Art History
+Year: 1
+City: Auburn
+Country: USA
+Phone: +1 555-0112
+
+ID: A0013
+Name: William
+Surname: Wilson
+Email: william.wilson@example.edu
+Date of Birth: 2002-11-02
+Course: Political Science
+Year: 4
+City: Milton
+Country: USA
+Phone: +1 555-0113
+
+ID: A0014
+Name: Emma
+Surname: Anderson
+Email: emma.anderson@example.edu
+Date of Birth: 2004-03-08
+Course: Psychology
+Year: 2
+City: Bristol
+Country: USA
+Phone: +1 555-0114
+
+ID: A0015
+Name: Thomas
+Surname: Taylor
+Email: thomas.taylor@example.edu
+Date of Birth: 2005-07-12
+Course: Environmental Science
+Year: 1
+City: Dover
+Country: USA
+Phone: +1 555-0115

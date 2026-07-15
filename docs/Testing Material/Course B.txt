@@ -1,0 +1,133 @@
+Course B — Data Structures and Algorithms
+
+ID: B0001
+Name: Lucas
+Surname: Miller
+Email: lucas.miller@example.edu
+Date of Birth: 2004-02-11
+Course: Data Structures and Algorithms
+Year: 2
+City: Kingston
+Country: USA
+Phone: +1 555-0201
+
+ID: B0002
+Name: Mia
+Surname: Davis
+Email: mia.davis@example.edu
+Date of Birth: 2005-06-24
+Course: Data Structures and Algorithms
+Year: 1
+City: Newport
+Country: USA
+Phone: +1 555-0202
+
+ID: B0003
+Name: Ethan
+Surname: Moore
+Email: ethan.moore@example.edu
+Date of Birth: 2003-09-30
+Course: Data Structures and Algorithms
+Year: 3
+City: Concord
+Country: USA
+Phone: +1 555-0203
+
+ID: B0004
+Name: Ava
+Surname: Thomas
+Email: ava.thomas@example.edu
+Date of Birth: 2004-12-05
+Course: Data Structures and Algorithms
+Year: 2
+City: Lincoln
+Country: USA
+Phone: +1 555-0204
+
+ID: B0005
+Name: Noah
+Surname: Jackson
+Email: noah.jackson@example.edu
+Date of Birth: 2005-04-17
+Course: Data Structures and Algorithms
+Year: 1
+City: Hudson
+Country: USA
+Phone: +1 555-0205
+
+ID: B0006
+Name: Isabella
+Surname: White
+Email: isabella.white@example.edu
+Date of Birth: 2002-08-08
+Course: Data Structures and Algorithms
+Year: 4
+City: Camden
+Country: USA
+Phone: +1 555-0206
+
+ID: B0007
+Name: Liam
+Surname: Harris
+Email: liam.harris@example.edu
+Date of Birth: 2004-01-19
+Course: Data Structures and Algorithms
+Year: 2
+City: Weston
+Country: USA
+Phone: +1 555-0207
+
+ID: B0008
+Name: Charlotte
+Surname: Martin
+Email: charlotte.martin@example.edu
+Date of Birth: 2005-10-28
+Course: Data Structures and Algorithms
+Year: 1
+City: Ashfield
+Country: USA
+Phone: +1 555-0208
+
+ID: B0009
+Name: Benjamin
+Surname: Thompson
+Email: benjamin.thompson@example.edu
+Date of Birth: 2003-03-03
+Course: Data Structures and Algorithms
+Year: 3
+City: Bedford
+Country: USA
+Phone: +1 555-0209
+
+ID: B0010
+Name: Amelia
+Surname: Lee
+Email: amelia.lee@example.edu
+Date of Birth: 2004-07-14
+Course: Data Structures and Algorithms
+Year: 2
+City: Clayton
+Country: USA
+Phone: +1 555-0210
+
+ID: B0011
+Name: Henry
+Surname: Clark
+Email: henry.clark@example.edu
+Date of Birth: 2005-05-21
+Course: Data Structures and Algorithms
+Year: 1
+City: Preston
+Country: USA
+Phone: +1 555-0211
+
+ID: B0012
+Name: Ella
+Surname: Lewis
+Email: ella.lewis@example.edu
+Date of Birth: 2002-11-16
+Course: Data Structures and Algorithms
+Year: 4
+City: Milford
+Country: USA
+Phone: +1 555-0212
