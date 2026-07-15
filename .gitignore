@@ -26,8 +26,20 @@ coverage/
 .DS_Store
 Thumbs.db
 docker.log
+*.log
 
 #IDE
 .vscode/
 .claude/
 output.json
+
+# python (up.py, container-setup/, tests/api)
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# playwright (tests/e2e)
+test-results/
+playwright-report/
+playwright/.cache/
+.last-run.json

@@ -1,0 +1,11 @@
+{
+  "name": "ulibot-allinone-e2e",
+  "private": true,
+  "description": "Playwright E2E for the all-in-one stack — self-contained in ulibotlocal, drives Moodle at localhost:8080.",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  }
+}

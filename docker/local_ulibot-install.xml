@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/ulibot/db" VERSION="2026040900" COMMENT="All-in-one LOCAL override: upstream local/ulibot/db/install.xml ships an empty TABLES section by design (the table is created lazily by local_ulibot_ensure_schema), but Moodle 4.5's installer rejects an empty install.xml. This override defines the table at install time so the plugin installs on a fresh site. Mounted into the container only; the plugin repo is untouched. local_ulibot_ensure_schema() guards on table_exists, so there is no double-create.">
+  <TABLES>
+    <TABLE NAME="local_ulibot" COMMENT="Asistentes Ulibot por curso">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="course" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="The course ID this assistant belongs to"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="prompt" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="welcometext" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="attachments" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="remote_id" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="active_audio" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="course_fk" TYPE="foreign" FIELDS="course" REFTABLE="course" REFFIELDS="id"/>
+      </KEYS>
+    </TABLE>
+  </TABLES>
+</XMLDB>
