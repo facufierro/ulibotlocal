@@ -74,7 +74,6 @@ services:
       ULIBOT_DB_SHADOW_URL: "mysql://root:123456@backdb:3306/ulibot_shadow"
       ULIBOT_ENVIRONMENT: "local"
       ULIBOT_EVALUATION_ENABLED: "${ULIBOT_EVALUATION_ENABLED:-false}"
-      ULIBOT_EVAL_API_KEY: "${ULIBOT_EVAL_API_KEY:-}"
       ULIBOT_ADMIN_MIGRATIONS_ENABLED: "false"
       DEEPEVAL_DISABLE_DOTENV: "1"
       # Keep each service's environment outside the shared source bind mount.
