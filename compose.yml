@@ -73,7 +73,7 @@ services:
       ULIBOT_DB_URL: "mysql://ulibot:ulibot@backdb:3306/ulibot"
       ULIBOT_DB_SHADOW_URL: "mysql://root:123456@backdb:3306/ulibot_shadow"
       ULIBOT_ENVIRONMENT: "local"
-      ULIBOT_EVALUATION_ENABLED: "${ULIBOT_EVALUATION_ENABLED:-false}"
+      ULIBOT_EVALUATION_API_ENABLED: "${ULIBOT_EVALUATION_API_ENABLED:-false}"
       ULIBOT_ADMIN_MIGRATIONS_ENABLED: "false"
       DEEPEVAL_DISABLE_DOTENV: "1"
       # Keep each service's environment outside the shared source bind mount.
@@ -106,6 +106,7 @@ services:
       ULIBOT_DB_URL: "mysql://ulibot:ulibot@backdb:3306/ulibot"
       ULIBOT_DB_SHADOW_URL: "mysql://root:123456@backdb:3306/ulibot_shadow"
       ULIBOT_ENVIRONMENT: "local"
+      ULIBOT_EVALUATION_WORKER_ENABLED: "true"
       DEEPEVAL_DISABLE_DOTENV: "1"
       # Prevent concurrent installs into the shared project environment.
       POETRY_VIRTUALENVS_IN_PROJECT: "false"
