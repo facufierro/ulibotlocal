@@ -6,8 +6,10 @@ declare global {
 }
 
 import { useEffect, useState } from 'react'
+import EvaluationViewer from './EvaluationViewer'
+import { LOCAL_BACKEND_URL, LOCAL_SITE_TOKEN } from './localConfig'
 
-function App() {
+function WidgetTestApp() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -41,10 +43,10 @@ function App() {
         url: "http://localhost:3000", 
         
         // Use the token from seed.sql (for 'Ulibot Site' on localhost)
-        token: "0842111e5f0b4c5b", 
+        token: LOCAL_SITE_TOKEN,
         
         // Point to local backend API
-        backurl: "http://127.0.0.1:8000/ulibot", 
+        backurl: LOCAL_BACKEND_URL,
 
         // Enable Vite dev server mode for HMR assets
         dev: true,
@@ -62,8 +64,8 @@ function App() {
 
         window.insertUliBotWidget({
           url: "http://localhost:3000", 
-          token: "0842111e5f0b4c5b", 
-          backurl: "http://127.0.0.1:8000/ulibot", 
+          token: LOCAL_SITE_TOKEN,
+          backurl: LOCAL_BACKEND_URL,
           dev: true,
           context: "general",
           contextinstance: "inline",
@@ -83,6 +85,7 @@ function App() {
       padding: '2rem' 
     }}>
       <h1>UliBot Test App</h1>
+      <p><a href="/evaluations">Abrir resultados de evaluación</a></p>
       <p>The chatbot should appear in the bottom right corner (Shadow DOM).</p>
       <div className="card">
         <p>
@@ -96,6 +99,14 @@ function App() {
       </div>
     </div>
   )
+}
+
+function App() {
+  if (window.location.pathname.startsWith('/evaluations')) {
+    return <EvaluationViewer />
+  }
+
+  return <WidgetTestApp />
 }
 
 export default App
