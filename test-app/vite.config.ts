@@ -113,7 +113,11 @@ function dockerLogsPlugin() {
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), browserConsolePlugin(), dockerLogsPlugin()],
+  plugins: [
+    react(),
+    browserConsolePlugin(),
+    ...(process.env.ULIBOT_EVAL_VIEWER ? [] : [dockerLogsPlugin()]),
+  ],
   server: {
     port: 5174, // Use a different port to avoid conflict with the main front
     hmr: false,
