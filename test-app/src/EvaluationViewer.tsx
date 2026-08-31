@@ -50,8 +50,25 @@ type DatasetOption = {
 
 type DatasetCase = {
   id: number
+  datasetId: number
   name: string
+  input: string
+  expectedOutput: string | null
+  retrievalContext: string[]
+  expectedTools: string[]
+  metadata: Record<string, unknown>
+  sortOrder: number
   enabled: boolean
+}
+
+type DraftDatasetCase = {
+  id: string
+  name: string
+  input: string
+  expectedOutput: string
+  retrievalContext: string
+  expectedTools: string
+  metadata: Record<string, unknown>
 }
 
 type ReportIssue = {
@@ -103,7 +120,7 @@ type EvaluationRun = {
 }
 
 type Filter = 'all' | 'failed' | 'passed'
-type WorkspaceView = 'new' | 'summary' | 'model' | 'prompt' | 'cases'
+type WorkspaceView = 'new' | 'datasets' | 'summary' | 'model' | 'prompt' | 'cases'
 type RunRequest = {
   dataset_id: number
   judge_model: string
@@ -138,6 +155,23 @@ const formatDate = (value: string | null) =>
       }).format(new Date(value))
     : '—'
 
+const createDraftCase = (values: Partial<DraftDatasetCase> = {}): DraftDatasetCase => ({
+  id: crypto.randomUUID(),
+  name: '',
+  input: '',
+  expectedOutput: '',
+  retrievalContext: '',
+  expectedTools: '',
+  metadata: {},
+  ...values,
+})
+
+const splitLines = (value: string) =>
+  value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean)
+
+const splitTools = (value: string) =>
+  value.split(',').map((item) => item.trim()).filter(Boolean)
+
 function EvaluationViewer() {
   const [backendUrl, setBackendUrl] = useState(LOCAL_BACKEND_URL)
   const [token, setToken] = useState(LOCAL_SITE_TOKEN)
@@ -164,6 +198,15 @@ function EvaluationViewer() {
   const [activeCompletedCases, setActiveCompletedCases] = useState(0)
   const [runMessage, setRunMessage] = useState('')
   const [activeView, setActiveView] = useState<WorkspaceView>('new')
+  const [datasetName, setDatasetName] = useState('')
+  const [datasetDescription, setDatasetDescription] = useState('')
+  const [draftDatasetCases, setDraftDatasetCases] = useState<DraftDatasetCase[]>(() => [
+    createDraftCase(),
+  ])
+  const [savingDataset, setSavingDataset] = useState(false)
+  const [datasetFormError, setDatasetFormError] = useState('')
+  const [datasetMessage, setDatasetMessage] = useState('')
+  const [datasetReadyToUse, setDatasetReadyToUse] = useState(false)
 
   const apiFetch = useCallback(
     async <T,>(path: string, options: RequestInit = {}): Promise<T> => {
@@ -272,7 +315,6 @@ function EvaluationViewer() {
           (item): item is AssistantOption => item !== null,
         )
         if (!accessible.length) throw new Error('No hay asistentes evaluables asignados al sitio local.')
-        if (!availableDatasets.length) throw new Error('No hay datasets de evaluación disponibles.')
         if (cancelled) return
 
         setAssistants(accessible)
@@ -284,7 +326,7 @@ function EvaluationViewer() {
           availableDatasets[0]
         await Promise.all([
           loadAssistant(initialAssistant.id),
-          loadDataset(initialDataset.id),
+          ...(initialDataset ? [loadDataset(initialDataset.id)] : []),
         ])
       } catch (requestError) {
         if (!cancelled) {
@@ -334,6 +376,207 @@ function EvaluationViewer() {
       setRunMessage('')
     } finally {
       setStartingRun(false)
+    }
+  }
+
+  const updateDraftDatasetCase = (
+    caseId: string,
+    field: keyof Omit<DraftDatasetCase, 'id' | 'metadata'>,
+    value: string,
+  ) => {
+    setDraftDatasetCases((current) =>
+      current.map((item) => item.id === caseId ? { ...item, [field]: value } : item),
+    )
+    setDatasetFormError('')
+    setDatasetMessage('')
+    setDatasetReadyToUse(false)
+  }
+
+  const addDraftDatasetCase = () => {
+    setDraftDatasetCases((current) => [...current, createDraftCase()])
+    setDatasetFormError('')
+    setDatasetMessage('')
+    setDatasetReadyToUse(false)
+  }
+
+  const removeDraftDatasetCase = (caseId: string) => {
+    setDraftDatasetCases((current) => current.filter((item) => item.id !== caseId))
+    setDatasetFormError('')
+    setDatasetMessage('')
+    setDatasetReadyToUse(false)
+  }
+
+  const importDatasetFile = async (file: File) => {
+    setDatasetFormError('')
+    setDatasetMessage('')
+    setDatasetReadyToUse(false)
+    try {
+      const rawDataset: unknown = JSON.parse(await file.text())
+      if (!rawDataset || typeof rawDataset !== 'object' || Array.isArray(rawDataset)) {
+        throw new Error('El archivo debe contener un objeto JSON de dataset.')
+      }
+      const parsed = rawDataset as Record<string, unknown>
+      if (!Array.isArray(parsed.cases) || parsed.cases.length === 0) {
+        throw new Error('El archivo debe incluir un arreglo "cases" con al menos un caso.')
+      }
+
+      const importedCases = parsed.cases.map((rawCase, index) => {
+        if (!rawCase || typeof rawCase !== 'object') {
+          throw new Error(`El caso ${index + 1} no tiene un formato válido.`)
+        }
+        const item = rawCase as Record<string, unknown>
+        const expectedOutput = item.expected_output ?? item.expectedOutput
+        const retrievalContext = item.retrieval_context ?? item.retrievalContext
+        const expectedTools = item.expected_tools ?? item.expectedTools
+        const metadata = item.metadata
+
+        return createDraftCase({
+          name: typeof item.name === 'string' ? item.name : `caso-${index + 1}`,
+          input: typeof item.input === 'string' ? item.input : '',
+          expectedOutput: typeof expectedOutput === 'string' ? expectedOutput : '',
+          retrievalContext: Array.isArray(retrievalContext)
+            ? retrievalContext.filter((value): value is string => typeof value === 'string').join('\n')
+            : typeof retrievalContext === 'string' ? retrievalContext : '',
+          expectedTools: Array.isArray(expectedTools)
+            ? expectedTools.filter((value): value is string => typeof value === 'string').join(', ')
+            : typeof expectedTools === 'string' ? expectedTools : '',
+          metadata: metadata && typeof metadata === 'object' && !Array.isArray(metadata)
+            ? metadata as Record<string, unknown>
+            : {},
+        })
+      })
+
+      setDatasetName(typeof parsed.name === 'string' ? parsed.name : '')
+      setDatasetDescription(typeof parsed.description === 'string' ? parsed.description : '')
+      setDraftDatasetCases(importedCases)
+      setDatasetMessage(`${importedCases.length} casos importados. Revísalos antes de guardar.`)
+    } catch (importError) {
+      setDatasetFormError(
+        importError instanceof Error ? importError.message : 'No se pudo leer el archivo JSON.',
+      )
+    }
+  }
+
+  const duplicateSelectedDataset = async () => {
+    const sourceDataset = datasets.find((item) => item.id === datasetId)
+    if (!sourceDataset) return
+    setDatasetFormError('')
+    setDatasetMessage('')
+    setDatasetReadyToUse(false)
+    try {
+      const cases = await apiFetch<DatasetCase[]>(
+        `/evaluation-datasets/${sourceDataset.id}/cases`,
+      )
+      setDatasetName(`${sourceDataset.name} - copia`)
+      setDatasetDescription(sourceDataset.description || '')
+      setDraftDatasetCases(cases.map((item) => createDraftCase({
+        name: item.name,
+        input: item.input,
+        expectedOutput: item.expectedOutput || '',
+        retrievalContext: item.retrievalContext.join('\n'),
+        expectedTools: item.expectedTools.join(', '),
+        metadata: item.metadata,
+      })))
+      setDatasetMessage(`${cases.length} casos copiados. Cambia el nombre y revisa el contenido.`)
+    } catch (requestError) {
+      setDatasetFormError(
+        requestError instanceof Error ? requestError.message : 'No se pudo duplicar el dataset.',
+      )
+    }
+  }
+
+  const saveDataset = async () => {
+    const normalizedName = datasetName.trim()
+    if (!normalizedName) {
+      setDatasetFormError('Escribe un nombre para el dataset.')
+      return
+    }
+    if (normalizedName.length > 191) {
+      setDatasetFormError('El nombre del dataset no puede superar los 191 caracteres.')
+      return
+    }
+    if (draftDatasetCases.length === 0) {
+      setDatasetFormError('Agrega al menos un caso de evaluación.')
+      return
+    }
+    const incompleteIndex = draftDatasetCases.findIndex(
+      (item) => !item.name.trim() || !item.input.trim() || !item.expectedOutput.trim(),
+    )
+    if (incompleteIndex >= 0) {
+      setDatasetFormError(
+        `Completa el nombre, la pregunta y la respuesta esperada del caso ${incompleteIndex + 1}.`,
+      )
+      return
+    }
+    const longNameIndex = draftDatasetCases.findIndex((item) => item.name.trim().length > 191)
+    if (longNameIndex >= 0) {
+      setDatasetFormError(`El nombre del caso ${longNameIndex + 1} supera los 191 caracteres.`)
+      return
+    }
+    const normalizedCaseNames = draftDatasetCases.map((item) => item.name.trim().toLowerCase())
+    if (new Set(normalizedCaseNames).size !== normalizedCaseNames.length) {
+      setDatasetFormError('Cada caso debe tener un nombre diferente.')
+      return
+    }
+
+    setSavingDataset(true)
+    setDatasetFormError('')
+    setDatasetMessage('Guardando dataset y casos…')
+    setDatasetReadyToUse(false)
+    let createdDataset: DatasetOption | null = null
+    let savedCaseCount = 0
+    try {
+      createdDataset = await apiFetch<DatasetOption>('/evaluation-datasets', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: normalizedName,
+          description: datasetDescription.trim() || null,
+        }),
+      })
+
+      for (const [index, item] of draftDatasetCases.entries()) {
+        await apiFetch<DatasetCase>(`/evaluation-datasets/${createdDataset.id}/cases`, {
+          method: 'POST',
+          body: JSON.stringify({
+            name: item.name.trim(),
+            input: item.input.trim(),
+            expected_output: item.expectedOutput.trim(),
+            retrieval_context: splitLines(item.retrievalContext),
+            expected_tools: splitTools(item.expectedTools),
+            metadata: item.metadata,
+            sort_order: index,
+          }),
+        })
+        savedCaseCount += 1
+      }
+
+      const refreshedDatasets = await apiFetch<DatasetOption[]>('/evaluation-datasets')
+      setDatasets(refreshedDatasets)
+      await loadDataset(createdDataset.id)
+      setDatasetName('')
+      setDatasetDescription('')
+      setDraftDatasetCases([createDraftCase()])
+      setDatasetMessage(
+        `Dataset "${createdDataset.name}" creado con ${savedCaseCount} casos y seleccionado para evaluar.`,
+      )
+      setDatasetReadyToUse(true)
+    } catch (requestError) {
+      if (createdDataset) {
+        const refreshedDatasets = await apiFetch<DatasetOption[]>('/evaluation-datasets').catch(() => [])
+        if (refreshedDatasets.length) setDatasets(refreshedDatasets)
+        await loadDataset(createdDataset.id).catch(() => undefined)
+        setDatasetFormError(
+          `El dataset se creó, pero solo se guardaron ${savedCaseCount} de ${draftDatasetCases.length} casos. ` +
+          'Revisa la conexión antes de continuar.',
+        )
+      } else {
+        setDatasetFormError(
+          requestError instanceof Error ? requestError.message : 'No se pudo crear el dataset.',
+        )
+      }
+      setDatasetMessage('')
+    } finally {
+      setSavingDataset(false)
     }
   }
 
@@ -471,7 +714,7 @@ function EvaluationViewer() {
 
       {initializing && <div className="loading-state">Preparando el evaluador local…</div>}
 
-      {!initializing && assistants.length > 0 && datasets.length > 0 && (
+      {!initializing && assistants.length > 0 && (
         <div className="evaluation-workspace">
           <aside className="evaluation-sidebar">
             <div className="sidebar-title">
@@ -484,6 +727,13 @@ function EvaluationViewer() {
               onClick={() => setActiveView('new')}
             >
               <span>+</span> Nueva evaluación
+            </button>
+
+            <button
+              className={`sidebar-datasets ${activeView === 'datasets' ? 'active' : ''}`}
+              onClick={() => setActiveView('datasets')}
+            >
+              <span>▦</span> Crear dataset
             </button>
 
             <div className="sidebar-group">
@@ -511,7 +761,12 @@ function EvaluationViewer() {
               {runs.map((item) => (
                 <button
                   key={item.id}
-                  className={selectedRunId === item.id && activeView !== 'new' ? 'selected' : ''}
+                  className={
+                    selectedRunId === item.id &&
+                    ['summary', 'model', 'prompt', 'cases'].includes(activeView)
+                      ? 'selected'
+                      : ''
+                  }
                   onClick={() => {
                     setActiveView('summary')
                     void loadRun(item.id)
@@ -525,6 +780,203 @@ function EvaluationViewer() {
           </aside>
 
           <div className="evaluation-content">
+      {activeView === 'datasets' && (
+        <section className="panel dataset-manager">
+          <div className="dataset-manager-heading">
+            <div>
+              <p className="eyebrow">DATASETS DE EVALUACIÓN</p>
+              <h2>Crear un dataset</h2>
+              <p>
+                Define preguntas verificables y la respuesta que debería producir el asistente.
+                El dataset se guarda únicamente en el backend local.
+              </p>
+            </div>
+            <span className="count-badge">{datasets.length} guardados</span>
+          </div>
+
+          <div className="dataset-tools">
+            <button
+              disabled={!selectedDataset || savingDataset}
+              onClick={() => void duplicateSelectedDataset()}
+            >
+              Duplicar dataset seleccionado
+            </button>
+            <label className={`secondary-button file-button ${savingDataset ? 'disabled' : ''}`}>
+              Importar JSON
+              <input
+                type="file"
+                accept=".json,application/json"
+                disabled={savingDataset}
+                onChange={(event) => {
+                  const input = event.currentTarget
+                  const file = input.files?.[0]
+                  if (file) void importDatasetFile(file)
+                  input.value = ''
+                }}
+              />
+            </label>
+          </div>
+
+          {datasetFormError && (
+            <div className="dataset-form-message error" role="alert">{datasetFormError}</div>
+          )}
+          {datasetMessage && (
+            <div className="dataset-form-message success" role="status">
+              <span>{datasetMessage}</span>
+              {datasetId > 0 && datasetReadyToUse && (
+                <button className="text-button" onClick={() => setActiveView('new')}>
+                  Usar en una evaluación
+                </button>
+              )}
+            </div>
+          )}
+
+          <div className="dataset-details-grid">
+            <label>
+              <span>Nombre del dataset <b>*</b></span>
+              <input
+                value={datasetName}
+                maxLength={191}
+                disabled={savingDataset}
+                onChange={(event) => {
+                  setDatasetName(event.target.value)
+                  setDatasetFormError('')
+                  setDatasetMessage('')
+                  setDatasetReadyToUse(false)
+                }}
+                placeholder="Ejemplo: Soporte GLPI — regresión v2"
+              />
+            </label>
+            <label>
+              <span>Descripción</span>
+              <input
+                value={datasetDescription}
+                disabled={savingDataset}
+                onChange={(event) => {
+                  setDatasetDescription(event.target.value)
+                  setDatasetFormError('')
+                  setDatasetMessage('')
+                  setDatasetReadyToUse(false)
+                }}
+                placeholder="Qué cubren estos casos y de dónde provienen"
+              />
+            </label>
+          </div>
+
+          <div className="dataset-cases-heading">
+            <div>
+              <h3>Casos de evaluación</h3>
+              <p>La pregunta y la respuesta esperada deben ser concretas y comprobables.</p>
+            </div>
+            <button disabled={savingDataset} onClick={addDraftDatasetCase}>+ Agregar caso</button>
+          </div>
+
+          {draftDatasetCases.length === 0 && (
+            <div className="dataset-empty-cases">
+              No hay casos. Agrega uno o importa un archivo JSON.
+            </div>
+          )}
+
+          <div className="dataset-case-editors">
+            {draftDatasetCases.map((item, index) => (
+              <article className="dataset-case-editor" key={item.id}>
+                <div className="dataset-case-heading">
+                  <span className="case-number">{index + 1}</span>
+                  <label>
+                    <span>Nombre interno del caso <b>*</b></span>
+                    <input
+                      value={item.name}
+                      maxLength={191}
+                      disabled={savingDataset}
+                      onChange={(event) =>
+                        updateDraftDatasetCase(item.id, 'name', event.target.value)
+                      }
+                      placeholder="Ejemplo: error-login-500"
+                    />
+                  </label>
+                  <button
+                    className="remove-case-button"
+                    disabled={savingDataset}
+                    onClick={() => removeDraftDatasetCase(item.id)}
+                    aria-label={`Eliminar caso ${index + 1}`}
+                  >
+                    Eliminar
+                  </button>
+                </div>
+
+                <div className="dataset-answer-grid">
+                  <label>
+                    <span>Pregunta del usuario <b>*</b></span>
+                    <textarea
+                      value={item.input}
+                      disabled={savingDataset}
+                      onChange={(event) =>
+                        updateDraftDatasetCase(item.id, 'input', event.target.value)
+                      }
+                      placeholder="La consulta real que recibirá el asistente"
+                    />
+                  </label>
+                  <label>
+                    <span>Respuesta esperada <b>*</b></span>
+                    <textarea
+                      value={item.expectedOutput}
+                      disabled={savingDataset}
+                      onChange={(event) =>
+                        updateDraftDatasetCase(item.id, 'expectedOutput', event.target.value)
+                      }
+                      placeholder="Qué debe responder para que el caso sea correcto"
+                    />
+                  </label>
+                </div>
+
+                <details className="dataset-case-options">
+                  <summary>Contexto y herramientas esperadas</summary>
+                  <div>
+                    <label>
+                      <span>Contexto documental</span>
+                      <textarea
+                        value={item.retrievalContext}
+                        disabled={savingDataset}
+                        onChange={(event) =>
+                          updateDraftDatasetCase(item.id, 'retrievalContext', event.target.value)
+                        }
+                        placeholder="Un fragmento recuperado por línea"
+                      />
+                    </label>
+                    <label>
+                      <span>Herramientas esperadas</span>
+                      <input
+                        value={item.expectedTools}
+                        disabled={savingDataset}
+                        onChange={(event) =>
+                          updateDraftDatasetCase(item.id, 'expectedTools', event.target.value)
+                        }
+                        placeholder="gdrivesearch, glpi_create_ticket"
+                      />
+                      <small>Sepáralas con comas. Déjalo vacío si no debe invocar herramientas.</small>
+                    </label>
+                  </div>
+                </details>
+              </article>
+            ))}
+          </div>
+
+          <div className="dataset-save-bar">
+            <div>
+              <strong>{draftDatasetCases.length} casos preparados</strong>
+              <span>Se guardarán como un dataset nuevo; no se modifica ninguno existente.</span>
+            </div>
+            <button
+              className="run-button"
+              disabled={savingDataset}
+              onClick={() => void saveDataset()}
+            >
+              {savingDataset ? 'Guardando…' : 'Crear dataset'}
+            </button>
+          </div>
+        </section>
+      )}
+
       {activeView === 'new' && (
         <section className="evaluation-builder">
           <div className="builder-heading">
@@ -558,9 +1010,10 @@ function EvaluationViewer() {
               <span className="step-label"><b>2</b> Dataset</span>
               <select
                 value={datasetId}
-                disabled={Boolean(activeRunId)}
+                disabled={Boolean(activeRunId) || datasets.length === 0}
                 onChange={(event) => void loadDataset(Number(event.target.value))}
               >
+                {datasets.length === 0 && <option value={0}>Crea un dataset primero</option>}
                 {datasets.map((item) => (
                   <option key={item.id} value={item.id}>{item.name}</option>
                 ))}
