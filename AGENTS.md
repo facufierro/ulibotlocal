@@ -18,3 +18,14 @@
 - When cloning an assistant for local testing, inspect and preserve the active
   production runtime. The clone must use local tenant credentials and must
   never reuse production credentials or external resource identifiers.
+
+## Moodle startup
+
+- Starting existing containers does not apply upgrades for the bind-mounted Moodle
+  plugins. When a plugin's code version exceeds its installed database version,
+  Moodle redirects administrator home/dashboard requests to `/admin/index.php`.
+  Check for pending upgrades before attributing slow navigation to startup or
+  backend connectivity. Running `admin/cli/upgrade.php` requires the user's
+  explicit migration authorization.
+- The widget translates Moodle's `global` context to backend `general/general`;
+  do not add a separate `global` assistant mapping to repair the home-page widget.
