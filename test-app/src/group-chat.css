@@ -1,0 +1,23 @@
+.local-group-test {
+  max-width: 960px;
+  margin: auto;
+  padding: 1.5rem;
+}
+
+.local-group-test h1 {
+  font-size: 2rem;
+}
+
+.local-group-test__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.local-group-test__controls select {
+  margin-left: .5rem;
+  padding: .5rem;
+  font: inherit;
+}

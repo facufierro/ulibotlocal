@@ -8,6 +8,14 @@
   credentials, tokens, personal data, or unverified assumptions.
 - Update or remove an entry when the underlying behavior changes so this file
   remains authoritative rather than becoming a history log.
+- Group chat is tested at the Vite test app's `/groups` page without plugin edits.
+  Its server-side fixture owns membership and the seeded course mapping; the
+  local signer is a development simulation, not Moodle authentication.
+- The local backend container startup applies pending Prisma migrations and
+  generates its client. Starting that container can therefore change the database.
+- On an already-configured stack, add only the group context mapping to the active
+  `general/general` assistant. Running `up.py` also re-seeds personal mappings and
+  normalizes all assistant runtimes, which can overwrite a locally cloned assistant.
 
 ## Assistant runtimes
 
