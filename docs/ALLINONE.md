@@ -142,6 +142,8 @@ Everything here is under `ulibotlocal/`. The other repos are used **read-only**:
    *inside* the Moodle container, where `localhost:8000` is the container itself. `up.py` sets
    `urlbackulibot=http://host.docker.internal:8000/ulibot`, which the container **and** the browser
    both resolve, so both chat and file upload work. Keep browsing at `localhost:8080` — auth still
-   keys on that host. (Needs Docker Desktop's `host.docker.internal`; present by default on Windows/Mac.)
+   keys on that host. On Windows, Docker Desktop's hosts-file entry can retain an old LAN
+   address after a network change. Verify the backend URL from Windows too: container-side
+   requests can succeed while the browser's requests time out against that stale address.
 4. **Windows performance** — Moodle core is baked into the image and all data is on named volumes.
    Don't bind-mount the Moodle tree or move volumes onto `d:\`.
