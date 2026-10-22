@@ -1,9 +1,22 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { spawn } from 'child_process'
-import { mkdirSync, createWriteStream, appendFileSync, writeFileSync } from 'fs'
+import { mkdirSync, createWriteStream, appendFileSync, writeFileSync, readFileSync } from 'fs'
 import { resolve } from 'path'
 import type { IncomingMessage, ServerResponse } from 'http'
+import { groupChatMiddleware } from './server/group-chat.mjs'
+
+function localGroupChatPlugin() {
+  return {
+    name: 'local-group-chat',
+    configureServer(server: { middlewares: { use: (handler: ReturnType<typeof groupChatMiddleware>) => void } }) {
+      server.middlewares.use(groupChatMiddleware({
+        readEnvironment: () => loadEnv('development', resolve(__dirname, '..'), 'ULIBOT_'),
+        readFixtures: () => JSON.parse(readFileSync(resolve(__dirname, 'server/group-chat-fixtures.json'), 'utf8')),
+      }))
+    },
+  }
+}
 
 function browserConsolePlugin() {
   return {
@@ -115,6 +128,7 @@ function dockerLogsPlugin() {
 export default defineConfig({
   plugins: [
     react(),
+    localGroupChatPlugin(),
     browserConsolePlugin(),
     ...(process.env.ULIBOT_EVAL_VIEWER ? [] : [dockerLogsPlugin()]),
   ],

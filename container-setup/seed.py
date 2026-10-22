@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -8,6 +9,7 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parent
 BACKEND_DIR = (ROOT_DIR / ".." / ".." / "ulibotback").resolve()
 ENV_PATH = ROOT_DIR / ".." / ".env"
+GROUP_FIXTURES_PATH = ROOT_DIR / ".." / "test-app" / "server" / "group-chat-fixtures.json"
 
 
 def parse_env(path: Path) -> dict[str, str]:
@@ -71,6 +73,16 @@ def build_sql(env: dict[str, str]) -> str:
 	bedrock_access_key_sql = f"'{sql_escape(bedrock_access_key)}'" if bedrock_access_key else "NULL"
 	bedrock_secret_key_sql = f"'{sql_escape(bedrock_secret_key)}'" if bedrock_secret_key else "NULL"
 	bedrock_region_sql = f"'{sql_escape(bedrock_region)}'" if bedrock_region else "NULL"
+	# Reuse the configured assistant without changing its personal mappings.
+	fixtures = json.loads(GROUP_FIXTURES_PATH.read_text(encoding="utf-8"))
+	group_contexts = sorted({(room["context"], room["contextinstance"]) for room in fixtures["rooms"]})
+	group_mappings = "\n".join(
+		f"DELETE FROM site_assistant WHERE siteId = @site_id AND context = '{sql_escape(context)}' "
+		f"AND contextInstance = '{sql_escape(instance)}' AND deletedAt IS NULL;\n"
+		f"INSERT INTO site_assistant (siteId, assistantId, context, contextInstance, deletedAt) "
+		f"VALUES (@site_id, @assistant_id, '{sql_escape(context)}', '{sql_escape(instance)}', NULL);"
+		for context, instance in group_contexts
+	)
 
 	return f"""
 SET @tenant_name = '{sql_escape(tenant_name)}';
@@ -152,6 +164,9 @@ WHERE siteId = @site_id
 
 INSERT INTO site_assistant (siteId, assistantId, context, contextInstance, deletedAt)
 VALUES (@site_id, @assistant_id, 'general', 'general', NULL);
+
+-- Local group test contexts come from the server-side membership fixtures.
+{group_mappings}
 
 DELETE FROM assistant_meta
 WHERE assistantId = @assistant_id

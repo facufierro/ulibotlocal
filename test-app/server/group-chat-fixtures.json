@@ -1,0 +1,25 @@
+{
+  "rooms": [
+    {
+      "groupid": "9201",
+      "groupname": "Local group A",
+      "courseid": "9001",
+      "coursename": "Local collaboration",
+      "context": "course",
+      "contextinstance": "uli-local-groups"
+    },
+    {
+      "groupid": "9202",
+      "groupname": "Local group B",
+      "courseid": "9001",
+      "coursename": "Local collaboration",
+      "context": "course",
+      "contextinstance": "uli-local-groups"
+    }
+  ],
+  "members": [
+    { "userid": "9101", "name": "Ana", "groups": ["9201"], "active": true },
+    { "userid": "9102", "name": "Luis", "groups": ["9201", "9202"], "active": true },
+    { "userid": "9103", "name": "Mar", "groups": ["9202"], "active": true }
+  ]
+}

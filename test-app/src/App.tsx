@@ -7,6 +7,7 @@ declare global {
 
 import { useEffect, useState } from 'react'
 import EvaluationViewer from './EvaluationViewer'
+import GroupChatTestApp from './GroupChatTestApp'
 import { LOCAL_BACKEND_URL, LOCAL_SITE_TOKEN } from './localConfig'
 
 function WidgetTestApp() {
@@ -102,6 +103,9 @@ function WidgetTestApp() {
 }
 
 function App() {
+  if (window.location.pathname === '/groups') {
+    return <GroupChatTestApp />
+  }
   if (window.location.pathname.startsWith('/evaluations')) {
     return <EvaluationViewer />
   }

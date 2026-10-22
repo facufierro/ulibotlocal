@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "test:group": "node --test tests/group-chat.node.mjs",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },
