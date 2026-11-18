@@ -1,4 +1,4 @@
-# All-in-one LOCAL test stack: Moodle 4.5 (+ local_ulibot & mod_lia) + FastAPI backend
+# All-in-one LOCAL test stack: Moodle 4.5 (+ local_ulibot, mod_lia & mod_chateabc) + FastAPI backend
 # + React widget frontend + all databases, on one Docker network.
 #
 #   Run:  python up.py        (from this directory — installs Moodle, seeds, wires config)
@@ -22,10 +22,23 @@ services:
       - moodledata:/var/www/moodledata
       - ../plugin-uli:/var/www/html/local/ulibot
       - ../plugin-lia:/var/www/html/mod/lia
+      - ../mod_chateabc:/var/www/html/mod/chateabc
+      - ../mod_chateabc/version.php:/opt/chateabc-upstream-version.php:ro
+      - ./docker/chateabc-local-version.php:/var/www/html/mod/chateabc/version.php:ro
       - ./docker/moodle-config.php:/var/www/html/config.php:ro
       # Overlay a valid install.xml so local_ulibot installs on fresh Moodle 4.5 (upstream ships
       # an empty TABLES section by design). Container-only overlay; plugin repo untouched.
       - ./docker/local_ulibot-install.xml:/var/www/html/local/ulibot/db/install.xml:ro
+
+  # The development service keeps the existing Chat EABC protocol and image.
+  chateabc:
+    build:
+      context: ../chateabc
+    ports:
+      - "127.0.0.1:40000:40000"
+    volumes:
+      - ./docker/chateabc-whitelist.txt:/usr/src/app/whitelist.txt:ro
+      - ../chateabc/routes.js:/usr/src/app/routes.js:ro
 
   moodledb:
     image: mariadb:10.11
