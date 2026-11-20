@@ -37,4 +37,13 @@ try {
     $denied = $error->errorcode === 'liagroups';
 }
 if (!$denied) { throw new RuntimeException('Disabled Lia was not rejected.'); }
-echo "Moodle identity, signed destination, group and disabled-feature checks passed.\n";
+$missinglia = clone $chat;
+$missinglia->liacmid = PHP_INT_MAX;
+$denied = false;
+try {
+    chateabc_lia_claims($course, $cm, $missinglia, (int)$options['group']);
+} catch (moodle_exception $error) {
+    $denied = $error->errorcode === 'liainvalid';
+}
+if (!$denied) { throw new RuntimeException('A missing Lia activity did not return liainvalid.'); }
+echo "Moodle identity, signed destination, group, disabled-feature and missing-Lia checks passed.\n";
