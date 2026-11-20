@@ -23,6 +23,9 @@ $CFG->dataroot  = '/var/www/moodledata';
 $CFG->admin     = 'admin';
 $CFG->directorypermissions = 0777;
 
+// The Lia backend reaches the chat container by service name.
+$CFG->forced_plugin_settings['chateabc']['chateabc_serverurl_internal'] = 'http://chateabc:40000';
+
 // ── PHPUnit (php admin/tool/phpunit/cli/init.php) ───────────────────────────
 $CFG->phpunit_prefix   = 'phpu_';
 $CFG->phpunit_dataroot = '/var/www/phpunitdata';
